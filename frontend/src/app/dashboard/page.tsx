@@ -37,7 +37,7 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           {[
             { label: "Generations Used", value: stats?.generationsThisMonth || 0, icon: <Sparkles className="w-5 h-5" />, color: "text-violet-400" },
-            { label: "Credits Remaining", value: stats?.generationsRemaining || 0, icon: <Clock className="w-5 h-5" />, color: "text-green-400" },
+            { label: "Credits Remaining", value: stats?.generationsRemaining === -1 ? "Unlimited" : (stats?.generationsRemaining || 0), icon: <Clock className="w-5 h-5" />, color: "text-green-400" },
             { label: "Avg. Score", value: stats?.averageScore ? Math.round(stats.averageScore) : "—", icon: <TrendingUp className="w-5 h-5" />, color: "text-blue-400" },
             { label: "Plan", value: user?.subscriptionTier || "FREE", icon: <Bookmark className="w-5 h-5" />, color: "text-amber-400" },
           ].map((s, i) => (

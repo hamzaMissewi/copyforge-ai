@@ -45,6 +45,7 @@ export const generateAPI = {
     prompt: string;
     tone?: string;
     wordLimit?: number;
+    templateId?: number;
   }) => api.post("/api/generate", data),
   refine: (content: string, instruction: string) =>
     api.post("/api/generate/refine", { content, instruction }),

@@ -94,7 +94,7 @@ function GenerateContent() {
         <p className="text-gray-400 mt-1">Create high-converting marketing content with AI</p>
       </div>
 
-      {user && user.subscriptionTier === "FREE" && (
+      {user && user.subscriptionTier === "FREE" && user.generationsLimit !== -1 && (
         <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 mb-6 text-amber-400 text-sm flex items-center gap-2">
           <span>Free plan: {user.generationsLimit - user.generationsUsed} generations remaining this month.</span>
           <a href="/dashboard/pricing" className="underline font-medium ml-auto">Upgrade →</a>
