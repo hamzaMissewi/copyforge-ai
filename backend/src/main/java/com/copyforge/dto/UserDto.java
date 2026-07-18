@@ -1,5 +1,8 @@
 package com.copyforge.dto;
 
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 public class UserDto {
@@ -29,6 +32,27 @@ public class UserDto {
             this.brandIndustry = brandIndustry;
             this.brandTargetAudience = brandTargetAudience;
         }
+    }
+
+    @Data
+    public static class UpdateProfileRequest {
+        @NotBlank(message = "Name is required")
+        @Size(min = 1, max = 100, message = "Name must be between 1 and 100 characters")
+        private String name;
+
+        @NotBlank(message = "Email is required")
+        @Email(message = "Invalid email format")
+        private String email;
+    }
+
+    @Data
+    public static class ChangePasswordRequest {
+        @NotBlank(message = "Current password is required")
+        private String currentPassword;
+
+        @NotBlank(message = "New password is required")
+        @Size(min = 6, message = "New password must be at least 6 characters")
+        private String newPassword;
     }
 
     @Data

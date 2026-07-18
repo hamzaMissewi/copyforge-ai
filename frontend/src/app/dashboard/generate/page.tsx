@@ -71,7 +71,7 @@ function GenerateContent() {
     if (!result?.content || !refineInstruction.trim()) return;
     setRefineLoading(true);
     try {
-      const res = await generateAPI.refine(result.content, refineInstruction);
+      const res = await generateAPI.refine(result.content, refineInstruction, result.id);
       setResult({ ...result, content: res.data.content });
       setRefineInstruction("");
       addToast("Copy refined successfully", "success");

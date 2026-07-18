@@ -85,4 +85,14 @@ public class GenerationService {
         }
         generationRepository.delete(generation);
     }
+
+    public Generation saveRefinedContent(Long id, String refinedContent, User user) {
+        Generation generation = generationRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Generation", "id", id));
+        if (!generation.getUser().getId().equals(user.getId())) {
+            throw new UnauthorizedException("You are not authorized to modify this generation");
+        }
+        generation.setRefinedContent(refinedContent);
+        return generationRepository.save(generation);
+    }
 }

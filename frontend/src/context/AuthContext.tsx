@@ -29,6 +29,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(() => {
     localStorage.removeItem("token");
+    document.cookie = "token=; path=/; max-age=0";
     setToken(null);
     setUser(null);
   }, []);
@@ -53,6 +54,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(res.data);
         } catch {
           localStorage.removeItem("token");
+          document.cookie = "token=; path=/; max-age=0";
           setToken(null);
         }
       }
@@ -65,6 +67,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const res = await authAPI.login(email, password);
     const data = res.data;
     localStorage.setItem("token", data.token);
+    document.cookie = `token=${data.token}; path=/; max-age=${7 * 24 * 60 * 60}`;
     setToken(data.token);
     setUser({
       email: data.email,
@@ -79,6 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const res = await authAPI.register(name, email, password);
     const data = res.data;
     localStorage.setItem("token", data.token);
+    document.cookie = `token=${data.token}; path=/; max-age=${7 * 24 * 60 * 60}`;
     setToken(data.token);
     setUser({
       email: data.email,

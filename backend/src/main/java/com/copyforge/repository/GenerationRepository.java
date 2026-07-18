@@ -23,6 +23,8 @@ public interface GenerationRepository extends JpaRepository<Generation, Long> {
 
     long countByUser(User user);
 
+    void deleteAllByUser(User user);
+
     @Query("SELECT AVG(g.score) FROM Generation g WHERE g.user = :user AND g.score IS NOT NULL")
     Double getAverageScoreByUser(@Param("user") User user);
 }

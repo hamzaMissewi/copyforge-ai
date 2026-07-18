@@ -48,8 +48,8 @@ export const generateAPI = {
     wordLimit?: number;
     templateId?: number;
   }) => api.post<GenerateResponse>("/api/generate", data),
-  refine: (content: string, instruction: string) =>
-    api.post<{ content: string }>("/api/generate/refine", { content, instruction }),
+  refine: (content: string, instruction: string, generationId?: number) =>
+    api.post<{ content: string }>("/api/generate/refine", { content, instruction, generationId }),
   score: (content: string, platform?: string, contentType?: string) =>
     api.post<ScoreResponse>("/api/generate/score", { content, platform, contentType }),
   history: (page = 0, size = 10, contentType?: string) => {
@@ -73,6 +73,11 @@ export const templateAPI = {
 
 export const userAPI = {
   profile: () => api.get<UserProfile>("/api/user/profile"),
+  updateProfile: (data: { name: string; email: string }) =>
+    api.put<UserProfile>("/api/user/profile", data),
+  changePassword: (data: { currentPassword: string; newPassword: string }) =>
+    api.put<{ message: string }>("/api/user/password", data),
+  deleteAccount: () => api.delete<{ message: string }>("/api/user/account"),
   updateBrand: (data: { brandVoice?: string; brandIndustry?: string; brandTargetAudience?: string }) =>
     api.put<{ message: string }>("/api/user/brand", data),
   dashboard: () => api.get<DashboardStats>("/api/user/dashboard"),

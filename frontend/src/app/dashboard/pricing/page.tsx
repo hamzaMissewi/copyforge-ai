@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useAuth } from "@/context/AuthContext";
 import { billingAPI } from "@/lib/api";
 import { useToast } from "@/components/Toast";
-import { Check } from "lucide-react";
+import { Check, ExternalLink } from "lucide-react";
 
 const plans = [
   {
@@ -88,6 +88,21 @@ export default function PricingPage() {
     }
   };
 
+  const handleManageBilling = useCallback(async () => {
+    try {
+      const res = await billingAPI.portal();
+      if (res.data.url && !res.data.url.startsWith("#")) {
+        window.location.replace(res.data.url);
+      } else {
+        addToast("Stripe billing portal is not configured.", "warning");
+      }
+    } catch {
+      addToast("Failed to open billing portal", "error");
+    }
+  }, [addToast]);
+
+  const isPaid = user?.subscriptionTier === "PRO" || user?.subscriptionTier === "BUSINESS";
+
   return (
     <DashboardLayout>
       <div className="max-w-5xl">
@@ -161,6 +176,15 @@ export default function PricingPage() {
             <br />
             Payments are securely processed by Stripe.
           </p>
+          {isPaid && (
+            <button
+              onClick={handleManageBilling}
+              className="mt-4 bg-gray-800 hover:bg-gray-700 text-white font-medium px-6 py-2.5 rounded-lg inline-flex items-center gap-2 transition-colors text-sm"
+            >
+              <ExternalLink className="w-4 h-4" />
+              Manage Subscription
+            </button>
+          )}
         </div>
       </div>
     </DashboardLayout>

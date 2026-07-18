@@ -77,6 +77,11 @@ public class GenerationController {
         }
 
         String refinedContent = geminiService.refineContent(request.getContent(), request.getInstruction());
+
+        if (request.getGenerationId() != null) {
+            generationService.saveRefinedContent(request.getGenerationId(), refinedContent, user);
+        }
+
         return ResponseEntity.ok(Map.of("content", refinedContent));
     }
 

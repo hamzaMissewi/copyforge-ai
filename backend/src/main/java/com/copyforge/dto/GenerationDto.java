@@ -3,6 +3,7 @@ package com.copyforge.dto;
 import com.copyforge.entity.Generation;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 public class GenerationDto {
@@ -16,6 +17,7 @@ public class GenerationDto {
         private String platform;
 
         @NotBlank(message = "Prompt/description is required")
+        @Size(min = 10, max = 5000, message = "Prompt must be between 10 and 5000 characters")
         private String prompt;
 
         private String tone;
@@ -57,6 +59,8 @@ public class GenerationDto {
 
         @NotBlank(message = "Refinement instruction is required")
         private String instruction;
+
+        private Long generationId;
     }
 
     @Data

@@ -4,6 +4,7 @@ import com.copyforge.dto.UserDto;
 import com.copyforge.entity.User;
 import com.copyforge.service.UserService;
 import com.copyforge.service.GenerationService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.Map;
@@ -29,6 +30,32 @@ public class UserController {
                 user.getGenerationsUsed(), user.getGenerationsLimit(),
                 user.getBrandVoice(), user.getBrandIndustry(), user.getBrandTargetAudience()
         ));
+    }
+
+    @PutMapping("/profile")
+    public ResponseEntity<?> updateProfile(@Valid @RequestBody UserDto.UpdateProfileRequest request) {
+        User user = userService.getCurrentUser();
+        User updated = userService.updateProfile(user, request.getName(), request.getEmail());
+        return ResponseEntity.ok(new UserDto.UserProfile(
+                updated.getId(), updated.getName(), updated.getEmail(),
+                updated.getSubscriptionTier().name(),
+                updated.getGenerationsUsed(), updated.getGenerationsLimit(),
+                updated.getBrandVoice(), updated.getBrandIndustry(), updated.getBrandTargetAudience()
+        ));
+    }
+
+    @PutMapping("/password")
+    public ResponseEntity<?> changePassword(@Valid @RequestBody UserDto.ChangePasswordRequest request) {
+        User user = userService.getCurrentUser();
+        userService.changePassword(user, request.getCurrentPassword(), request.getNewPassword());
+        return ResponseEntity.ok(Map.of("message", "Password changed successfully"));
+    }
+
+    @DeleteMapping("/account")
+    public ResponseEntity<?> deleteAccount() {
+        User user = userService.getCurrentUser();
+        userService.deleteAccount(user);
+        return ResponseEntity.ok(Map.of("message", "Account deleted successfully"));
     }
 
     @PutMapping("/brand")

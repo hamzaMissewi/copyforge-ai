@@ -11,10 +11,8 @@ import com.stripe.Stripe;
 import com.stripe.exception.StripeException;
 import com.stripe.model.checkout.Session;
 import com.stripe.model.Customer;
-import com.stripe.model.Subscription;
 import com.stripe.param.checkout.SessionCreateParams;
 import com.stripe.param.CustomerCreateParams;
-import com.stripe.param.BillingPortalSessionCreateParams;
 
 import jakarta.annotation.PostConstruct;
 import java.util.Map;
@@ -112,13 +110,14 @@ public class StripeService {
         }
 
         try {
-            BillingPortalSessionCreateParams params = BillingPortalSessionCreateParams.builder()
+            com.stripe.param.billingportal.SessionCreateParams params =
+                com.stripe.param.billingportal.SessionCreateParams.builder()
                 .setCustomer(user.getStripeCustomerId())
                 .setReturnUrl(cancelUrl)
                 .build();
 
-            com.stripe.model.billingPortal.Session portalSession =
-                com.stripe.model.billingPortal.Session.create(params);
+            com.stripe.model.billingportal.Session portalSession =
+                com.stripe.model.billingportal.Session.create(params);
 
             return Map.of("url", portalSession.getUrl());
         } catch (StripeException e) {
@@ -145,7 +144,10 @@ public class StripeService {
             Map<String, Object> sessionData = (Map<String, Object>) data.get("object");
             String customerId = (String) sessionData.get("customer");
             String subscriptionId = (String) sessionData.get("subscription");
-            String userIdStr = ((Map<String, String>) sessionData.get("metadata")).get("userId");
+
+            @SuppressWarnings("unchecked")
+            Map<String, String> metadata = (Map<String, String>) sessionData.get("metadata");
+            String userIdStr = metadata != null ? metadata.get("userId") : null;
 
             if (userIdStr != null) {
                 Long userId = Long.parseLong(userIdStr);
@@ -157,6 +159,18 @@ public class StripeService {
                         upgradeUserToBusiness(user, customerId, subscriptionId);
                     }
                 });
+            } else {
+                log.warn("No userId in checkout session metadata, attempting lookup by customer ID");
+                if (customerId != null) {
+                    userRepository.findByStripeCustomerId(customerId).ifPresent(user -> {
+                        String priceId = extractPriceId(sessionData);
+                        if (proPriceId != null && proPriceId.equals(priceId)) {
+                            upgradeUserToPro(user, customerId, subscriptionId);
+                        } else if (businessPriceId != null && businessPriceId.equals(priceId)) {
+                            upgradeUserToBusiness(user, customerId, subscriptionId);
+                        }
+                    });
+                }
             }
         } catch (Exception e) {
             log.error("Error handling checkout.session.completed: {}", e.getMessage(), e);
@@ -164,7 +178,24 @@ public class StripeService {
     }
 
     private void handleSubscriptionUpdated(Map<String, Object> data) {
-        log.info("Subscription updated event received");
+        try {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> subscriptionData = (Map<String, Object>) data.get("object");
+            String customerId = (String) subscriptionData.get("customer");
+            String status = (String) subscriptionData.get("status");
+
+            if (customerId != null) {
+                userRepository.findByStripeCustomerId(customerId).ifPresent(user -> {
+                    if ("active".equals(status)) {
+                        log.info("Subscription active for user {}", user.getEmail());
+                    } else if ("past_due".equals(status) || "unpaid".equals(status)) {
+                        log.warn("Subscription {} for user {}", status, user.getEmail());
+                    }
+                });
+            }
+        } catch (Exception e) {
+            log.error("Error handling customer.subscription.updated: {}", e.getMessage(), e);
+        }
     }
 
     private void handleSubscriptionDeleted(Map<String, Object> data) {
@@ -182,7 +213,19 @@ public class StripeService {
     }
 
     private void handlePaymentFailed(Map<String, Object> data) {
-        log.warn("Payment failed event received");
+        try {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> invoiceData = (Map<String, Object>) data.get("object");
+            String customerId = (String) invoiceData.get("customer");
+
+            if (customerId != null) {
+                userRepository.findByStripeCustomerId(customerId).ifPresent(user ->
+                    log.warn("Payment failed for user {} (customer: {})", user.getEmail(), customerId)
+                );
+            }
+        } catch (Exception e) {
+            log.error("Error handling invoice.payment_failed: {}", e.getMessage(), e);
+        }
     }
 
     public void upgradeUserToPro(User user, String stripeCustomerId, String stripeSubscriptionId) {

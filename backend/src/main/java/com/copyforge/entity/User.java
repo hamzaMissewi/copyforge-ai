@@ -66,7 +66,7 @@ public class User {
     }
 
     public boolean canGenerate() {
-        return generationsUsed < generationsLimit;
+        return generationsLimit < 0 || generationsUsed < generationsLimit;
     }
 
     public void incrementGenerations() {
