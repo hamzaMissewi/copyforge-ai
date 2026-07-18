@@ -18,10 +18,13 @@ spring:
   h2:
     console:
       enabled: false
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
 
 app:
   jwt:
-    secret: ${JWT_SECRET:ChangeThisToASecureRandomStringInProduction}
+    secret: ${JWT_SECRET}
     expiration: ${JWT_EXPIRATION:86400000}
   gemini:
     api-key: ${GEMINI_API_KEY}
@@ -29,6 +32,10 @@ app:
   stripe:
     secret-key: ${STRIPE_SECRET_KEY}
     webhook-secret: ${STRIPE_WEBHOOK_SECRET}
+    price-pro-monthly: ${STRIPE_PRICE_PRO_MONTHLY:price_pro_monthly}
+    price-business-monthly: ${STRIPE_PRICE_BUSINESS_MONTHLY:price_business_monthly}
+    success-url: ${STRIPE_SUCCESS_URL:https://copyforge.ai/dashboard?session_id={CHECKOUT_SESSION_ID}}
+    cancel-url: ${STRIPE_CANCEL_URL:https://copyforge.ai/dashboard/pricing}
 
 logging:
   level:

@@ -3,6 +3,10 @@ package com.copyforge.service;
 import com.copyforge.dto.GenerationDto;
 import com.copyforge.entity.Generation;
 import com.copyforge.entity.User;
+import com.copyforge.exception.AiServiceException;
+import com.copyforge.exception.ResourceNotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
@@ -13,6 +17,8 @@ import java.util.*;
 
 @Service
 public class GeminiService {
+
+    private static final Logger log = LoggerFactory.getLogger(GeminiService.class);
 
     @Value("${app.gemini.api-key}")
     private String apiKey;
@@ -68,7 +74,8 @@ public class GeminiService {
             JsonNode root = objectMapper.readTree(response.getBody());
             return root.path("candidates").path(0).path("content").path("parts").path(0).path("text").asText();
         } catch (Exception e) {
-            throw new RuntimeException("Failed to generate content with Gemini: " + e.getMessage());
+            log.error("Failed to generate content with Gemini: {}", e.getMessage(), e);
+            throw new AiServiceException("Failed to generate content with AI service: " + e.getMessage(), e);
         }
     }
 
@@ -108,7 +115,8 @@ public class GeminiService {
             JsonNode root = objectMapper.readTree(response.getBody());
             return root.path("candidates").path(0).path("content").path("parts").path(0).path("text").asText();
         } catch (Exception e) {
-            throw new RuntimeException("Failed to refine content: " + e.getMessage());
+            log.error("Failed to refine content: {}", e.getMessage(), e);
+            throw new AiServiceException("Failed to refine content: " + e.getMessage(), e);
         }
     }
 
@@ -171,6 +179,7 @@ public class GeminiService {
 
             return scoreResponse;
         } catch (Exception e) {
+            log.warn("Could not score content with AI, using fallback: {}", e.getMessage());
             GenerationDto.ScoreResponse fallback = new GenerationDto.ScoreResponse();
             fallback.setScore(70.0);
             fallback.setFeedback("Could not score content automatically. Please review manually.");

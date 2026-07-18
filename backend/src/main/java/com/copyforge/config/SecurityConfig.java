@@ -40,6 +40,7 @@ public class SecurityConfig {
                 .requestMatchers("/h2-console/**").permitAll()
                 .requestMatchers("/api/public/**").permitAll()
                 .requestMatchers("/actuator/**").permitAll()
+                .requestMatchers("/api/billing/webhook").permitAll()
                 .anyRequest().authenticated()
             )
             .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))

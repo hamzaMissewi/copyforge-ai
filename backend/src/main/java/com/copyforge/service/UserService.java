@@ -1,6 +1,8 @@
 package com.copyforge.service;
 
 import com.copyforge.entity.User;
+import com.copyforge.exception.GenerationLimitExceededException;
+import com.copyforge.exception.ResourceNotFoundException;
 import com.copyforge.repository.UserRepository;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -19,7 +21,7 @@ public class UserService {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
         return userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User", "email", email));
     }
 
     public User updateBrand(User user, String brandVoice, String brandIndustry, String brandTargetAudience) {
@@ -31,7 +33,7 @@ public class UserService {
 
     public void checkAndEnforceGenerationLimit(User user) {
         if (!user.canGenerate()) {
-            throw new RuntimeException("Generation limit reached. Please upgrade your plan.");
+            throw new GenerationLimitExceededException(user.getGenerationsUsed(), user.getGenerationsLimit());
         }
     }
 

@@ -16,7 +16,8 @@ public class CorsConfig {
         config.setAllowedOrigins(Arrays.asList(
             "http://localhost:3000",
             "http://localhost:3001",
-            "https://copyforge.ai"
+            "https://copyforge.ai",
+            "https://www.copyforge.ai"
         ));
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         config.setAllowedHeaders(Arrays.asList("*"));

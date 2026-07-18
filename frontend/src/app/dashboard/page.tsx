@@ -4,19 +4,36 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { userAPI, generateAPI } from "@/lib/api";
+import { useToast } from "@/components/Toast";
 import Link from "next/link";
 import { Sparkles, TrendingUp, Clock, Bookmark } from "lucide-react";
+import type { DashboardStats, Generation } from "@/lib/types";
 
 export default function DashboardPage() {
   const { user, refreshUser } = useAuth();
-  const [stats, setStats] = useState<any>(null);
-  const [recent, setRecent] = useState<any[]>([]);
+  const { addToast } = useToast();
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [recent, setRecent] = useState<Generation[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    userAPI.dashboard().then((r) => setStats(r.data)).catch(() => {});
-    generateAPI.recent().then((r) => setRecent(r.data)).catch(() => {});
+    const fetchData = async () => {
+      try {
+        const [statsRes, recentRes] = await Promise.all([
+          userAPI.dashboard().catch(() => null),
+          generateAPI.recent().catch(() => null),
+        ]);
+        if (statsRes) setStats(statsRes.data);
+        if (recentRes) setRecent(recentRes.data);
+      } catch {
+        addToast("Failed to load dashboard data", "error");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
     refreshUser();
-  }, []);
+  }, [addToast, refreshUser]);
 
   const quickActions = [
     { label: "Social Media Post", type: "SOCIAL_MEDIA_POST", platform: "Instagram", icon: "📱", color: "from-pink-500 to-rose-500" },
@@ -46,7 +63,7 @@ export default function DashboardPage() {
                 <span className="text-gray-400 text-sm">{s.label}</span>
                 <span className={s.color}>{s.icon}</span>
               </div>
-              <div className="text-2xl font-bold">{s.value}</div>
+              <div className="text-2xl font-bold">{loading ? "—" : s.value}</div>
             </div>
           ))}
         </div>
@@ -92,7 +109,7 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div className="space-y-3">
-              {recent.map((gen: any) => (
+              {recent.map((gen) => (
                 <div key={gen.id} className="bg-gray-900 border border-gray-800 rounded-xl p-4 flex items-center justify-between hover:border-gray-700 transition-colors">
                   <div className="flex items-center gap-4">
                     <div className="w-10 h-10 rounded-lg bg-violet-500/10 flex items-center justify-center text-violet-400 text-sm font-bold">

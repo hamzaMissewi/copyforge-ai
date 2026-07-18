@@ -1,8 +1,10 @@
 package com.copyforge.controller;
 
+import com.copyforge.config.RateLimiter;
 import com.copyforge.dto.GenerationDto;
 import com.copyforge.entity.Generation;
 import com.copyforge.entity.User;
+import com.copyforge.exception.UnauthorizedException;
 import com.copyforge.service.*;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
@@ -18,18 +20,28 @@ public class GenerationController {
     private final GenerationService generationService;
     private final UserService userService;
     private final TemplateService templateService;
+    private final RateLimiter rateLimiter;
 
     public GenerationController(GeminiService geminiService, GenerationService generationService,
-                               UserService userService, TemplateService templateService) {
+                               UserService userService, TemplateService templateService,
+                               RateLimiter rateLimiter) {
         this.geminiService = geminiService;
         this.generationService = generationService;
         this.userService = userService;
         this.templateService = templateService;
+        this.rateLimiter = rateLimiter;
     }
 
     @PostMapping
     public ResponseEntity<?> generate(@Valid @RequestBody GenerationDto.GenerateRequest request) {
         User user = userService.getCurrentUser();
+
+        if (!rateLimiter.tryAcquire("generate:" + user.getId(), 5)) {
+            return ResponseEntity.status(429).body(Map.of(
+                "error", "Too many requests. Please wait a moment before generating again."
+            ));
+        }
+
         userService.checkAndEnforceGenerationLimit(user);
 
         String templateSystemPrompt = null;
@@ -56,6 +68,14 @@ public class GenerationController {
 
     @PostMapping("/refine")
     public ResponseEntity<?> refine(@Valid @RequestBody GenerationDto.RefineRequest request) {
+        User user = userService.getCurrentUser();
+
+        if (!rateLimiter.tryAcquire("refine:" + user.getId(), 10)) {
+            return ResponseEntity.status(429).body(Map.of(
+                "error", "Too many requests. Please wait before refining again."
+            ));
+        }
+
         String refinedContent = geminiService.refineContent(request.getContent(), request.getInstruction());
         return ResponseEntity.ok(Map.of("content", refinedContent));
     }

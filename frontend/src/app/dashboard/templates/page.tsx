@@ -3,16 +3,21 @@
 import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { templateAPI } from "@/lib/api";
+import { useToast } from "@/components/Toast";
 import Link from "next/link";
 import { FileText, ArrowRight } from "lucide-react";
+import type { Template } from "@/lib/types";
 
 export default function TemplatesPage() {
-  const [templates, setTemplates] = useState<any[]>([]);
+  const [templates, setTemplates] = useState<Template[]>([]);
   const [category, setCategory] = useState("All");
+  const { addToast } = useToast();
 
   useEffect(() => {
-    templateAPI.getAll().then((r) => setTemplates(r.data)).catch(() => {});
-  }, []);
+    templateAPI.getAll()
+      .then((r) => setTemplates(r.data))
+      .catch(() => addToast("Failed to load templates", "error"));
+  }, [addToast]);
 
   const categories = ["All", ...new Set(templates.map((t) => t.category).filter(Boolean))];
   const filtered = category === "All" ? templates : templates.filter((t) => t.category === category);

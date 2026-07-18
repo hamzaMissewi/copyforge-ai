@@ -1,9 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useAuth } from "@/context/AuthContext";
+import { billingAPI } from "@/lib/api";
+import { useToast } from "@/components/Toast";
 import { Check } from "lucide-react";
-import Link from "next/link";
 
 const plans = [
   {
@@ -65,6 +67,26 @@ const plans = [
 
 export default function PricingPage() {
   const { user } = useAuth();
+  const { addToast } = useToast();
+  const [loading, setLoading] = useState<string | null>(null);
+
+  const handleCheckout = async (plan: typeof plans[number]) => {
+    if (!plan.stripePriceId) return;
+
+    setLoading(plan.name);
+    try {
+      const res = await billingAPI.checkout(plan.stripePriceId);
+      if (res.data.url && !res.data.url.startsWith("#")) {
+        window.location.replace(res.data.url);
+      } else {
+        addToast("Stripe is not configured yet. Please add your Stripe keys to enable payments.", "warning");
+      }
+    } catch {
+      addToast("Failed to start checkout. Please try again.", "error");
+    } finally {
+      setLoading(null);
+    }
+  };
 
   return (
     <DashboardLayout>
@@ -121,8 +143,12 @@ export default function PricingPage() {
                   {plan.cta}
                 </a>
               ) : (
-                <button className="w-full py-3 rounded-lg font-medium bg-violet-600 hover:bg-violet-700 transition-colors text-white">
-                  {plan.cta}
+                <button
+                  onClick={() => handleCheckout(plan)}
+                  disabled={loading === plan.name}
+                  className="w-full py-3 rounded-lg font-medium bg-violet-600 hover:bg-violet-700 disabled:opacity-50 transition-colors text-white"
+                >
+                  {loading === plan.name ? "Redirecting..." : plan.cta}
                 </button>
               )}
             </div>
@@ -133,7 +159,7 @@ export default function PricingPage() {
           <p className="text-gray-400 text-sm">
             All paid plans come with a 7-day free trial. Cancel anytime.
             <br />
-            Stripe integration ready — connect your Stripe keys to start accepting payments.
+            Payments are securely processed by Stripe.
           </p>
         </div>
       </div>

@@ -19,6 +19,8 @@ spring:
       hibernate:
         format_sql: true
         dialect: ${SPRING_JPA_DATABASE_PLATFORM:org.hibernate.dialect.H2Dialect}
+  flyway:
+    enabled: false
 
 app:
   jwt:
@@ -30,6 +32,10 @@ app:
   stripe:
     secret-key: ${STRIPE_SECRET_KEY:sk_test_placeholder}
     webhook-secret: ${STRIPE_WEBHOOK_SECRET:whsec_placeholder}
+    price-pro-monthly: ${STRIPE_PRICE_PRO_MONTHLY:price_pro_monthly}
+    price-business-monthly: ${STRIPE_PRICE_BUSINESS_MONTHLY:price_business_monthly}
+    success-url: ${STRIPE_SUCCESS_URL:http://localhost:3000/dashboard?session_id={CHECKOUT_SESSION_ID}}
+    cancel-url: ${STRIPE_CANCEL_URL:http://localhost:3000/dashboard/pricing}
 
 logging:
   level:

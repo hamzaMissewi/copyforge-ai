@@ -29,19 +29,23 @@ public class BillingController {
 
     @PostMapping("/webhook")
     public ResponseEntity<?> handleWebhook(@RequestBody Map<String, Object> payload,
-                                            @RequestHeader("Stripe-Signature") String signature) {
-        // In production: verify webhook signature and handle events
-        // String eventType = payload.get("type").toString();
-        // if ("checkout.session.completed".equals(eventType)) { ... }
-        // if ("customer.subscription.deleted".equals(eventType)) { ... }
+                                            @RequestHeader(value = "Stripe-Signature",
+                                                required = false) String signature) {
+        String eventType = (String) payload.get("type");
+        if (eventType != null) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> data = (Map<String, Object>) payload.get("data");
+            if (data != null) {
+                stripeService.handleWebhookEvent(eventType, data);
+            }
+        }
         return ResponseEntity.ok(Map.of("received", true));
     }
 
     @GetMapping("/portal")
     public ResponseEntity<?> createPortal() {
         User user = userService.getCurrentUser();
-        return ResponseEntity.ok(Map.of(
-            "url", "https://billing.stripe.com/p/session/placeholder"
-        ));
+        Map<String, String> portalSession = stripeService.createPortalSession(user);
+        return ResponseEntity.ok(portalSession);
     }
 }

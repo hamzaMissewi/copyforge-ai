@@ -1,12 +1,14 @@
 "use client";
 
 import { Suspense } from "react";
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { generateAPI } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/components/Toast";
 import { Sparkles, Copy, RefreshCw, TrendingUp, Wand2, Check } from "lucide-react";
+import type { GenerateResponse } from "@/lib/types";
 
 const contentTypes = [
   { value: "SOCIAL_MEDIA_POST", label: "Social Media Post", platforms: ["Instagram", "Facebook", "Twitter/X", "TikTok"] },
@@ -26,26 +28,23 @@ const tones = ["Professional", "Casual", "Humorous", "Urgent", "Inspirational", 
 function GenerateContent() {
   const searchParams = useSearchParams();
   const { user, refreshUser } = useAuth();
+  const { addToast } = useToast();
 
-  const [contentType, setContentType] = useState(searchParams.get("type") || "SOCIAL_MEDIA_POST");
-  const [platform, setPlatform] = useState(searchParams.get("platform") || "Instagram");
+  const initialType = useMemo(() => searchParams.get("type") || "SOCIAL_MEDIA_POST", [searchParams]);
+  const initialPlatform = useMemo(() => searchParams.get("platform") || "Instagram", [searchParams]);
+
+  const [contentType, setContentType] = useState(initialType);
+  const [platform, setPlatform] = useState(initialPlatform);
   const [prompt, setPrompt] = useState("");
   const [tone, setTone] = useState("");
   const [wordLimit, setWordLimit] = useState<number | "">("");
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<GenerateResponse | null>(null);
   const [refineLoading, setRefineLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [refineInstruction, setRefineInstruction] = useState("");
 
   const selectedType = contentTypes.find((c) => c.value === contentType);
-
-  useEffect(() => {
-    const type = searchParams.get("type");
-    const plat = searchParams.get("platform");
-    if (type) setContentType(type);
-    if (plat) setPlatform(plat);
-  }, [searchParams]);
 
   const handleGenerate = async () => {
     if (!prompt.trim()) return;
@@ -60,8 +59,9 @@ function GenerateContent() {
       });
       setResult(res.data);
       refreshUser();
-    } catch (err: any) {
-      alert(err.response?.data?.error || "Generation failed. Please try again.");
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "Generation failed. Please try again.";
+      addToast(errorMessage, "error");
     } finally {
       setLoading(false);
     }
@@ -74,16 +74,18 @@ function GenerateContent() {
       const res = await generateAPI.refine(result.content, refineInstruction);
       setResult({ ...result, content: res.data.content });
       setRefineInstruction("");
+      addToast("Copy refined successfully", "success");
     } catch {
-      alert("Refinement failed");
+      addToast("Refinement failed. Please try again.", "error");
     } finally {
       setRefineLoading(false);
     }
   };
 
   const copyToClipboard = () => {
-    navigator.clipboard.writeText(result.content);
+    navigator.clipboard.writeText(result?.content || "");
     setCopied(true);
+    addToast("Copied to clipboard", "success");
     setTimeout(() => setCopied(false), 2000);
   };
 

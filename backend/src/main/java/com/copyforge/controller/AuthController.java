@@ -2,6 +2,7 @@ package com.copyforge.controller;
 
 import com.copyforge.dto.AuthDto;
 import com.copyforge.entity.User;
+import com.copyforge.exception.DuplicateResourceException;
 import com.copyforge.repository.UserRepository;
 import com.copyforge.security.JwtTokenProvider;
 import com.copyforge.service.UserService;
@@ -37,7 +38,7 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody AuthDto.RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Email already registered"));
+            throw new DuplicateResourceException("Email already registered");
         }
 
         User user = User.builder()

@@ -1,15 +1,8 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import { authAPI } from "@/lib/api";
-
-interface User {
-  email: string;
-  name: string;
-  subscriptionTier: string;
-  generationsUsed: number;
-  generationsLimit: number;
-}
+import type { User } from "@/lib/types";
 
 interface AuthContextType {
   user: User | null;
@@ -23,10 +16,22 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+function getInitialToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem("token");
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
+  const [token, setToken] = useState<string | null>(getInitialToken);
   const [loading, setLoading] = useState(true);
+  const initRef = useRef(false);
+
+  const logout = useCallback(() => {
+    localStorage.removeItem("token");
+    setToken(null);
+    setUser(null);
+  }, []);
 
   const refreshUser = useCallback(async () => {
     try {
@@ -35,17 +40,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch {
       logout();
     }
-  }, []);
+  }, [logout]);
 
   useEffect(() => {
-    const storedToken = localStorage.getItem("token");
-    if (storedToken) {
-      setToken(storedToken);
-      refreshUser().finally(() => setLoading(false));
-    } else {
+    if (initRef.current) return;
+    initRef.current = true;
+
+    async function init() {
+      if (token) {
+        try {
+          const res = await authAPI.me();
+          setUser(res.data);
+        } catch {
+          localStorage.removeItem("token");
+          setToken(null);
+        }
+      }
       setLoading(false);
     }
-  }, [refreshUser]);
+    init();
+  }, [token]);
 
   const login = async (email: string, password: string) => {
     const res = await authAPI.login(email, password);
@@ -73,12 +87,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       generationsUsed: data.generationsUsed,
       generationsLimit: data.generationsLimit,
     });
-  };
-
-  const logout = () => {
-    localStorage.removeItem("token");
-    setToken(null);
-    setUser(null);
   };
 
   return (

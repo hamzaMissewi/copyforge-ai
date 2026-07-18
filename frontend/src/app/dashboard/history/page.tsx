@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { generateAPI } from "@/lib/api";
-import { Clock, Bookmark, Copy, Check, Trash2, Filter } from "lucide-react";
+import { useToast } from "@/components/Toast";
+import { Clock, Bookmark, Copy, Check, Trash2 } from "lucide-react";
+import type { Generation } from "@/lib/types";
 
 const typeLabels: Record<string, string> = {
   SOCIAL_MEDIA_POST: "Social Media",
@@ -19,40 +21,63 @@ const typeLabels: Record<string, string> = {
 };
 
 export default function HistoryPage() {
-  const [generations, setGenerations] = useState<any[]>([]);
+  const [generations, setGenerations] = useState<Generation[]>([]);
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [filter, setFilter] = useState<string>("");
   const [copiedId, setCopiedId] = useState<number | null>(null);
   const [tab, setTab] = useState<"all" | "bookmarks">("all");
+  const { addToast } = useToast();
+  const fetchedRef = useRef(false);
 
-  const fetchGenerations = async () => {
+  const fetchGenerations = useCallback(async () => {
     try {
       const res = tab === "bookmarks"
         ? await generateAPI.bookmarks(page)
         : await generateAPI.history(page, 10, filter || undefined);
       setGenerations(res.data.content || []);
       setTotalPages(res.data.totalPages || 1);
-    } catch {}
-  };
+    } catch {
+      addToast("Failed to load generations", "error");
+    }
+  }, [page, filter, tab, addToast]);
 
-  useEffect(() => { fetchGenerations(); }, [page, filter, tab]);
+  useEffect(() => {
+    fetchedRef.current = false;
+  }, [page, filter, tab]);
+
+  useEffect(() => {
+    if (!fetchedRef.current) {
+      fetchedRef.current = true;
+      fetchGenerations();
+    }
+  }, [fetchGenerations]);
 
   const copyContent = (content: string, id: number) => {
     navigator.clipboard.writeText(content);
     setCopiedId(id);
+    addToast("Copied to clipboard", "success");
     setTimeout(() => setCopiedId(null), 2000);
   };
 
   const toggleBookmark = async (id: number) => {
-    await generateAPI.toggleBookmark(id);
-    fetchGenerations();
+    try {
+      await generateAPI.toggleBookmark(id);
+      fetchGenerations();
+    } catch {
+      addToast("Failed to toggle bookmark", "error");
+    }
   };
 
   const deleteGeneration = async (id: number) => {
     if (confirm("Delete this generation?")) {
-      await generateAPI.delete(id);
-      fetchGenerations();
+      try {
+        await generateAPI.delete(id);
+        addToast("Generation deleted", "success");
+        fetchGenerations();
+      } catch {
+        addToast("Failed to delete generation", "error");
+      }
     }
   };
 
@@ -97,7 +122,7 @@ export default function HistoryPage() {
           </div>
         ) : (
           <div className="space-y-3">
-            {generations.map((gen: any) => (
+            {generations.map((gen) => (
               <div key={gen.id} className="bg-gray-900 border border-gray-800 rounded-xl p-5 hover:border-gray-700 transition-colors">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">

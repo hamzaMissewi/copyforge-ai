@@ -3,6 +3,8 @@ package com.copyforge.service;
 import com.copyforge.dto.GenerationDto;
 import com.copyforge.entity.Generation;
 import com.copyforge.entity.User;
+import com.copyforge.exception.ResourceNotFoundException;
+import com.copyforge.exception.UnauthorizedException;
 import com.copyforge.repository.GenerationRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -56,10 +58,10 @@ public class GenerationService {
 
     public Generation toggleBookmark(Long id, User user) {
         Generation generation = generationRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Generation not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Generation", "id", id));
 
         if (!generation.getUser().getId().equals(user.getId())) {
-            throw new RuntimeException("Unauthorized");
+            throw new UnauthorizedException("You are not authorized to modify this generation");
         }
 
         generation.setBookmarked(!generation.getBookmarked());
@@ -77,9 +79,9 @@ public class GenerationService {
 
     public void deleteGeneration(Long id, User user) {
         Generation generation = generationRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Generation not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Generation", "id", id));
         if (!generation.getUser().getId().equals(user.getId())) {
-            throw new RuntimeException("Unauthorized");
+            throw new UnauthorizedException("You are not authorized to delete this generation");
         }
         generationRepository.delete(generation);
     }

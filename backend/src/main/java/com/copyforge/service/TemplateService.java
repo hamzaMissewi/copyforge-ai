@@ -39,7 +39,7 @@ public class TemplateService {
 
     public Template getTemplateById(Long id) {
         return templateRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Template not found"));
+                .orElseThrow(() -> new com.copyforge.exception.ResourceNotFoundException("Template", "id", id));
     }
 
     public void initializeDefaultTemplates() {

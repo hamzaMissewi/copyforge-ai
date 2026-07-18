@@ -4,10 +4,12 @@ import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { userAPI } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/components/Toast";
 import { Save } from "lucide-react";
 
 export default function SettingsPage() {
   const { user, refreshUser } = useAuth();
+  const { addToast } = useToast();
   const [brandVoice, setBrandVoice] = useState("");
   const [brandIndustry, setBrandIndustry] = useState("");
   const [brandTargetAudience, setBrandTargetAudience] = useState("");
@@ -18,16 +20,21 @@ export default function SettingsPage() {
       setBrandVoice(r.data.brandVoice || "");
       setBrandIndustry(r.data.brandIndustry || "");
       setBrandTargetAudience(r.data.brandTargetAudience || "");
-    }).catch(() => {});
-  }, []);
+    }).catch(() => {
+      addToast("Failed to load profile settings", "error");
+    });
+  }, [addToast]);
 
   const handleSave = async () => {
     try {
       await userAPI.updateBrand({ brandVoice, brandIndustry, brandTargetAudience });
       setSaved(true);
       refreshUser();
+      addToast("Settings saved successfully", "success");
       setTimeout(() => setSaved(false), 2000);
-    } catch {}
+    } catch {
+      addToast("Failed to save settings", "error");
+    }
   };
 
   return (
